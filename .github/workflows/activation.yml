@@ -6,27 +6,19 @@ jobs:
     name: Request Manual Activation File
     runs-on: ubuntu-latest
     steps:
-      # 1. Checkout Repository (Wajib agar Builder tidak bingung mencari project)
+      # 1. Checkout Wajib ada supaya Action bisa baca ProjectVersion.txt
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Jalankan Unity Builder HANYA untuk generate License
-      - name: Request Activation File
-        uses: game-ci/unity-builder@v4
+      # 2. Request File (JANGAN MASUKKAN unityVersion DI SINI)
+      # Dia akan otomatis cari file ProjectSettings/ProjectVersion.txt di repo kamu
+      - name: Request manual activation file
         id: getManualLicenseFile
-        with:
-          # Masukkan Versi Unity yang TEPAT sesuai ProjectVersion.txt kamu
-          # Contoh format Unity 6: 6000.0.23f1 (Cek di Unity Hub kamu string lengkapnya)
-          unityVersion: 6000.0.23f1 
-          targetPlatform: StandaloneLinux64
-          # Perintah sakti: "-createManualActivationFile"
-          customParameters: -batchmode -nographics -createManualActivationFile -quit
+        uses: game-ci/unity-request-activation-file@v2
 
-      # 3. Upload Artifact (Gunakan v4 agar tidak error)
+      # 3. Upload Hasilnya (Pakai v4 biar tidak error)
       - name: Upload activation file
         uses: actions/upload-artifact@v4
-        if: always() # Upload meskipun step sebelumnya dianggap "gagal" oleh Unity (karena exit code license)
         with:
           name: Unity_Activation_File
-          # Ambil semua file berakhiran .alf di folder project
-          path: "**/*.alf"
+          path: ${{ steps.getManualLicenseFile.outputs.filePath }}
