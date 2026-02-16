@@ -1,0 +1,49 @@
+name: Manual Convert Test
+on:
+  push:
+    paths:
+      - 'contoh.fbx'
+
+jobs:
+  convert_fbx:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: 💾 Cache Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**') }}
+          restore-keys: |
+            Library-
+
+      # Builder akan mencoba login pakai Email/Pass karena License kosong
+      - name: 🛠️ Run Unity Converter
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          # Hapus UNITY_LICENSE jika kosong/salah
+        with:
+          targetPlatform: StandaloneLinux64
+          # Unity akan mencoba aktivasi via Command Line (sesuai teks referensi)
+          customParameters: -executeMethod TestBuilder.ManualConvert -batchmode -nographics -quit
+
+      - name: 🔍 Verify Output
+        run: |
+          if [ -f "output/contoh.zepeto" ]; then
+            echo "✅ File .zepeto ditemukan!"
+          else
+            echo "❌ File gagal dibuat."
+            exit 1
+          fi
+
+      - name: 📤 Save Result to Repo
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "🤖 Auto-Convert: contoh.fbx -> contoh.zepeto"
+          file_pattern: output/*.zepeto
